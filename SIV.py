@@ -105,17 +105,21 @@ if __name__ == "__main__":
 
         try:
             if not os.path.isdir(dirPath):
-                raise Exception(f"--> {dirPath} <-- is not a directory")
+                raise Exception(f"\"{dirPath}\" is not a directory")
             elif not os.path.exists(dirPath):
-                raise Exception(f"--> {dirPath} <-- doesn't exist")
+                raise Exception(f" {dirPath} doesn't exist")
+            elif not os.path.isfile(verFilePath):
+                raise Exception(f" {verFilePath} doesn't exist")
+            elif not os.path.isfile(reportFilePath):
+                raise Exception(f" {reportFilePath} doesn't exist")
             else:
                 if check_if_file_is_inside_folder(verFilePath, dirPath): # if true, file location is inside
-                    raise Exception(f"The verification file specified by\n--- {verFilePath} ---\ncannot be inside the root folder\n{dirPath}")
+                    raise Exception(f"The verification file specified by {verFilePath} cannot be inside the root folder {dirPath}")
                 elif check_if_file_is_inside_folder(reportFilePath, dirPath): # if true, file location is inside
-                    raise Exception(f"The report file specified by\n--- {reportFilePath} ---\ncannot be inside the folder\n{dirPath}")
+                    raise Exception(f"The report file specified by {reportFilePath} cannot be inside the folder {dirPath}")
                 else:
                     if hashFun != "md5" and hashFun != "sha1":
-                        raise Exception(f"The hashing function \"--- {hashFun} ---\" is not supported.\nType \'siv --help\' for available hashing functions")
+                        raise Exception(f"The hashing function \"{hashFun}\" is not supported.\nType \'siv --help\' for available hashing functions")
                     else:
                         with open(verFilePath + ".csv", "w", newline="") as csv_file:
                             writer = csv.writer(csv_file)
