@@ -31,7 +31,7 @@ def scan_folder(root_folder, csv_writer):
             num_dirs += 1
             
             # next folder
-            sub_files, sub_dirs = scan_folder(path)
+            sub_files, sub_dirs = scan_folder(path, csv_writer)
             num_files += sub_files
             num_dirs += sub_dirs
         else:
@@ -48,14 +48,14 @@ def scan_folder(root_folder, csv_writer):
             # permissions
             permissions = oct(os.stat(path).st_mode & 0o777)
             # calculate last modification date
-            modification_time_since_epoch = os.path.getmtime(filename)
+            modification_time_since_epoch = os.path.getmtime(path)
             modification_datetime = datetime.datetime.fromtimestamp(modification_time_since_epoch)
             formatted_datetime = modification_datetime.strftime("%d/%m/%Y %H:%M:%S GMT+1")
             # calculate hash
             if args.hash_function == "md5":
-                computed_message_digest = calculate_hash(path, hashlib.md5)
+                computed_message_digest = calculate_hash(path, hashlib.md5())
             elif args.hash_function == "sha1":
-                computed_message_digest = calculate_hash(path, hashlib.sha1)
+                computed_message_digest = calculate_hash(path, hashlib.sha1())
             # save all the values in a list before writing to the csv file
             toBeWritten = [filename, size, file_owner_name, file_group_name, permissions, formatted_datetime, computed_message_digest, root_folder]
             # writes to the csv
