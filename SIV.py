@@ -6,6 +6,7 @@ import pwd              # for getting the name of the owner of a file/directory
 import grp              # for getting the name of the group owning a file/directory
 import datetime         # for managing dates and time in a human-readable format
 import hashlib          # for hashing files
+import time             # for calculating the total amount of time that a certain mode takes
 
 def check_if_file_is_inside_folder(filePath : str, dirPath : str):
     if os.path.commonprefix([filePath, dirPath]) == dirPath:
@@ -86,11 +87,11 @@ def scan_folder(root_folder, csv_writer):
 if __name__ == "__main__":
     
     parser = ap.ArgumentParser(add_help=False)
-    #parser.usage = 'This is a simple System Integrity Verifier (SIV) for a Linux system. Its goal is to detect file system\
-    #modifications occurring within a directory tree. The SIV outputs statistics and warnings about changes\
-    #to a report file specified by the user.'
+    parser.usage = 'This is a simple System Integrity Verifier (SIV) for a Linux system. Its goal is to detect file system\
+    modifications occurring within a directory tree. The SIV outputs statistics and warnings about changes\
+    to a report file specified by the user.'
 
-    #------------ List of all the arguments------------------
+    #------------ List of all the arguments ------------
     group1 = parser.add_mutually_exclusive_group()
 
     group1.add_argument('-h', '--help', action='help')
@@ -102,8 +103,7 @@ if __name__ == "__main__":
     parser.add_argument('-V', '--verification-file', action='store', type=str, required=True, help='Name of the verification file')
     parser.add_argument('-H', '--hash-function', action='store', type=str, choices=['sha1', 'md5'], help='Specifies the algorithm for the hash function')
  
-
-    #------------ Parse all the received arguments
+    #------------ Parse all the received arguments ------------
     args = parser.parse_args() # Namespace for all the arguments
 
     if args.verification_mode:
@@ -111,27 +111,23 @@ if __name__ == "__main__":
             raise Exception("In verification mode the hash function cannot be specified")
 
     if args.initialization_mode == True:
+        start_time = time.time() # start counting time  
         print("Starting initialization mode...")
         dirPath = args.directory
         verFilePath = args.verification_file
         reportFilePath = args.report_file
         hashFun = args.hash_function
-        #-------Temporary hardcoding for testing purposes--------
-        #dirPath = "/home/accazeta/Scrivania/Test Folder"
-        #verFilePath = "/home/accazeta/Scrivania/Test Folder/verification_file.txt"
-        #reportFilePath = "/home/accazeta/Scrivania/Test Folder/report_file.txt"
-        #hashFun = "md5"
-        #-------End of programming malpractice-----------
 
+        #------------ Check that the requirements are met ------------
         try:
             if not os.path.isdir(dirPath):
                 raise Exception(f"\"{dirPath}\" is not a directory")
             elif not os.path.exists(dirPath):
                 raise Exception(f" {dirPath} doesn't exist")
-            elif not os.path.isfile(verFilePath):
-                raise Exception(f" {verFilePath} doesn't exist")
-            elif not os.path.isfile(reportFilePath):
-                raise Exception(f" {reportFilePath} doesn't exist")
+            #elif not os.path.isfile(verFilePath):
+            #    raise Exception(f" {verFilePath} doesn't exist")
+            elif not reportFilePath.endswith(".txt"):
+                reportFilePath + ".txt"
             else:
                 if check_if_file_is_inside_folder(verFilePath, dirPath): # if true, file location is inside
                     raise Exception(f"The verification file specified by {verFilePath} cannot be inside the root folder {dirPath}")
@@ -141,16 +137,27 @@ if __name__ == "__main__":
                     if hashFun != "md5" and hashFun != "sha1":
                         raise Exception(f"The hashing function \"{hashFun}\" is not supported.\nType \'siv --help\' for available hashing functions")
                     else:
+                        #------------ If everything is fine, write to the verification file ------------
                         with open(verFilePath + ".csv", "w", newline="") as csv_file:
                             writer = csv.writer(csv_file)
-                            writer.writerow(['Name', 'Size (Kb)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash', 'Path'])
+                            writer.writerow(['Name', 'Size (Kb)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
                             num_files, num_dirs = scan_folder(dirPath, writer)
                             print(f"In total {num_files} files and {num_dirs} directories have been scanned!")
-            
+                            end_time = time.time()
+                            total_time_initialization_mode = end_time - start_time
+                        #------------ Write the report file ------------
+                        with open(reportFilePath, "w") as reportFile:
+                            reportFile.write(f"The full path of the monitore directory is {dirPath}\n")
+                            reportFile.write(f"The full path of the verification file is {verFilePath}.csv\n")
+                            reportFile.write(f"Overall, {num_dirs} directories containing a total of {num_files} files have been scanned\n")
+                            reportFile.write(f"The total time spent in initialization mode is {total_time_initialization_mode} (seconds)\n")
+
         except Exception as e:
             print(str(e) + "\n")
             traceback.print_exc()
+
     elif args.verification_mode:
         print("Starting verification mode...")
+       
 
 
