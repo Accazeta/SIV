@@ -26,13 +26,20 @@ def calculate_hash(filepath, hasher):
 def scan_folder(root_folder, csv_writer):
     num_files = 0
     num_dirs = 0
-    for filename in os.listdir(root_folder):
+    # create a list of all the directories followed by all the files
+    dirList = [x for x in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, x))]
+    filesList = [x for x in os.listdir(root_folder) if not os.path.isdir(os.path.join(root_folder, x))]
+    if dirList: # if this list is not empty, sort it
+        dirList.sort()
+    if filesList: # if this list is not empty, sort it
+        filesList.sort()
+    for filename in dirList + filesList:
         path = os.path.join(root_folder, filename)
         if os.path.isdir(path):
             num_dirs += 1
             #--------------writing phase for directories-----------------
             # Save only the name of the directory
-            name = os.path.basename(os.path.dirname(path))
+            name = filename
             size = None # The instructions say that only the size of files should be saved. This is for dirs.
             # get the owner name
             dir_owner_uid = os.stat(path).st_uid
@@ -92,7 +99,7 @@ if __name__ == "__main__":
     to a report file specified by the user.'
 
     #------------ List of all the arguments ------------
-    group1 = parser.add_mutually_exclusive_group()
+    group1 = parser.add_mutually_exclusive_group(required=True)
 
     group1.add_argument('-h', '--help', action='help')
     group1.add_argument('-i', '--initialization-mode', action='store_true', help='Specifies that the script should be run in \"initialization mode\"')
@@ -106,10 +113,6 @@ if __name__ == "__main__":
     #------------ Parse all the received arguments ------------
     args = parser.parse_args() # Namespace for all the arguments
 
-    if args.verification_mode:
-        if args.hash_function is not None and args.verification_file is not None:
-            raise Exception("In verification mode the hash function cannot be specified")
-
     if args.initialization_mode == True:
         start_time = time.time() # start counting time  
         print("Starting initialization mode...")
@@ -121,11 +124,9 @@ if __name__ == "__main__":
         #------------ Check that the requirements are met ------------
         try:
             if not os.path.isdir(dirPath):
-                raise Exception(f"\"{dirPath}\" is not a directory")
+                raise NotADirectoryError(f"\"{dirPath}\" is not a directory")
             elif not os.path.exists(dirPath):
-                raise Exception(f" {dirPath} doesn't exist")
-            #elif not os.path.isfile(verFilePath):
-            #    raise Exception(f" {verFilePath} doesn't exist")
+                raise FileNotFoundError(f" {dirPath} doesn't exist")
             elif not reportFilePath.endswith(".txt"):
                 reportFilePath + ".txt"
             else:
@@ -147,7 +148,7 @@ if __name__ == "__main__":
                             total_time_initialization_mode = end_time - start_time
                         #------------ Write the report file ------------
                         with open(reportFilePath, "w") as reportFile:
-                            reportFile.write(f"The full path of the monitore directory is {dirPath}\n")
+                            reportFile.write(f"The full path of the monitored directory is {dirPath}\n")
                             reportFile.write(f"The full path of the verification file is {verFilePath}.csv\n")
                             reportFile.write(f"Overall, {num_dirs} directories containing a total of {num_files} files have been scanned\n")
                             reportFile.write(f"The total time spent in initialization mode is {total_time_initialization_mode} (seconds)\n")
@@ -157,7 +158,47 @@ if __name__ == "__main__":
             traceback.print_exc()
 
     elif args.verification_mode:
+        start_time = time.time() # start counting time  
+        
         print("Starting verification mode...")
-       
+        dirPath = args.directory
+        verFilePath = args.verification_file + ".csv"
+        reportFilePath = args.report_file   
+        hashFun = ""
 
+        # retrieves the 7th element of the first row of the csv file, which contains the name of the 
+        # hash function (inside brackets)
+        with open(verFilePath, "r") as f:
+            temp_reader = csv.reader(f)
+            hashFun = next(temp_reader)[6]
+            hashFun = hashFun[hashFun.find("(")+1 : hashFun.find(")")]
 
+        try:
+            if args.hash_function is not None:
+                raise Exception("In verification mode the hash function cannot be specified")
+            elif not os.path.isdir(dirPath):
+                raise NotADirectoryError(f"\n\"{dirPath}\" is not a directory")
+            elif not os.path.exists(dirPath):
+                raise FileNotFoundError(f"\n {dirPath} doesn't exist")
+            elif not os.path.isfile(verFilePath):
+                raise FileNotFoundError(f"\n {verFilePath} doesn't exist")
+            elif not os.path.isfile(reportFilePath):
+                raise FileNotFoundError(f"\n {reportFilePath} doesn't exist")
+            elif not str(reportFilePath).endswith(".txt"):
+                raise ValueError(f"\n {reportFilePath} must be a .txt file")
+            elif check_if_file_is_inside_folder(verFilePath, dirPath): # if true, file location is inside
+                raise Exception(f"The verification file specified by {verFilePath} cannot be inside the root folder {dirPath}")
+            elif check_if_file_is_inside_folder(reportFilePath, dirPath): # if true, file location is inside
+                raise Exception(f"The report file specified by {reportFilePath} cannot be inside the folder {dirPath}")
+            else:
+                with open("new_csv_file.csv", "w", newline="") as new_csv_file:
+                    new_writer = csv.writer(new_csv_file)
+                    num_files, num_dirs = scan_folder(dirPath, new_writer)
+
+                end_time = time.time()
+                total_time_verification_mode = end_time - start_time
+        except Exception as e:
+            print(str(e) + "\n")
+            traceback.print_exc()
+
+        
