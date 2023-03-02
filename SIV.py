@@ -80,9 +80,9 @@ def scan_folder(root_folder, csv_writer):
             modification_datetime = datetime.datetime.fromtimestamp(modification_time_since_epoch)
             formatted_datetime = modification_datetime.strftime("%d/%m/%Y %H:%M:%S GMT+1")
             # calculate hash
-            if args.hash_function == "md5":
+            if hashFun == "md5":
                 computed_message_digest = calculate_hash(path, hashlib.md5())
-            elif args.hash_function == "sha1":
+            elif hashFun == "sha1":
                 computed_message_digest = calculate_hash(path, hashlib.sha1())
             # save all the values in a list before writing to the csv file
             toBeWritten = [filename, size, file_owner_name, file_group_name, permissions, formatted_datetime, computed_message_digest, path]
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         with open(verFilePath, "r") as f:
             temp_reader = csv.reader(f)
             hashFun = next(temp_reader)[6]
-            hashFun = hashFun[hashFun.find("(")+1 : hashFun.find(")")]
+            hashFun = hashFun[hashFun.find("(") + 1 : hashFun.find(")")]
 
         try:
             if args.hash_function is not None:
@@ -191,10 +191,38 @@ if __name__ == "__main__":
             elif check_if_file_is_inside_folder(reportFilePath, dirPath): # if true, file location is inside
                 raise Exception(f"The report file specified by {reportFilePath} cannot be inside the folder {dirPath}")
             else:
+                # create a new csv file that is going to be compared with the old one to see if something has changed
                 with open("new_csv_file.csv", "w", newline="") as new_csv_file:
                     new_writer = csv.writer(new_csv_file)
+                    new_writer.writerow(['Name', 'Size (Kb)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
                     num_files, num_dirs = scan_folder(dirPath, new_writer)
-
+                #------------ Check if something has been deleted ------------ 
+                # from the old csv file remove all the entries that are in the new csv.
+                # If there's something left in the old csv, then it was deleted
+                #
+                # Import the paths from the original csv
+                original_csv_files = set()
+                with open(verFilePath, "r") as original_csv:
+                    reader = csv.reader(original_csv)
+                    for row in reader:
+                        original_csv_files.add(row[-1])
+                # Import the paths from the new csv
+                new_csv_files = set()
+                with open("new_csv_file.csv", "r") as temp:
+                    reader = csv.reader(temp)
+                    for row in reader:
+                        new_csv_files.add(row[-1]) 
+                deleted_paths = set()
+                deleted_paths = original_csv_files - new_csv_files
+                if bool(deleted_paths): # if the set is not empty, something has been deleted
+                    print("Warning: the following file/s has/have been deleted!\n")
+                    for deleted_file in deleted_paths:
+                        print(deleted_file)
+                else:
+                    print("No file was deleted!")
+                
+                
+ 
                 end_time = time.time()
                 total_time_verification_mode = end_time - start_time
         except Exception as e:
