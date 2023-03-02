@@ -198,7 +198,7 @@ if __name__ == "__main__":
                     num_files, num_dirs = scan_folder(dirPath, new_writer)
                 #------------ Check if something has been deleted ------------ 
                 # from the old csv file remove all the entries that are in the new csv.
-                # If there's something left in the old csv, then it was deleted
+                # If there's something left in the old csv, then it means that it was deleted
                 #
                 # Import the paths from the original csv
                 original_csv_files = set()
@@ -214,13 +214,26 @@ if __name__ == "__main__":
                         new_csv_files.add(row[-1]) 
                 deleted_paths = set()
                 deleted_paths = original_csv_files - new_csv_files
-                if bool(deleted_paths): # if the set is not empty, something has been deleted
-                    print("Warning: the following file/s has/have been deleted!\n")
+                print("------------ Scanning for deleted files or directories ------------")
+                if bool(deleted_paths): # if the set is not empty, it means that something has been deleted
+                    print("Warning: the following file/s or directory/ies has/have been deleted!\n")
                     for deleted_file in deleted_paths:
                         print(deleted_file)
                 else:
-                    print("No file was deleted!")
-                
+                    print("Nothing was deleted!")
+                #------------ Check if something new was added ------------
+                # This is achieved by doing the opposite set subtraction from above
+                # From the new files remove all the old files. If there's something left, it must have been added
+                print("------------ Scanning for new files or directories ------------")
+                new_paths = new_csv_files - original_csv_files
+                if bool(new_paths):
+                    print("Warning: the following file/s or directory/ies has/have been deleted\n")
+                    for added_file in new_paths:
+                        print(added_file)
+                else:
+                    print("Nothing was added!")
+                #------------ Look for all the remaing stuff to find ------------
+
                 
  
                 end_time = time.time()
