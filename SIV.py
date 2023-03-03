@@ -55,7 +55,7 @@ def scan_folder(root_folder, csv_writer):
             # hash: None
             hashed_value = None
             # save all the values in a list before writing to the csv file
-            toBeWritten = [name, size, dir_owner_name, dir_group_name, permissions, date_time, hashed_value, root_folder]
+            toBeWritten = [name, size, dir_owner_name, dir_group_name, permissions, date_time, hashed_value, path]
             # writes to the csv
             csv_writer.writerow(toBeWritten)
             # next folder
@@ -90,6 +90,15 @@ def scan_folder(root_folder, csv_writer):
             csv_writer.writerow(toBeWritten)
 
     return num_files, num_dirs
+
+def copy_csv_and_remove_unwanted_lines(inputCsvFile : str, outputCsvFile : str, unwantedItems : set):
+    with open(inputCsvFile, 'r') as inputCsv, open(outputCsvFile, "w", newline="") as outputCsv:
+        reader = csv.reader(inputCsv)
+        writer = csv.writer(outputCsv)
+        for row in reader:
+            if row[-1] not in unwantedItems:
+                writer.writerow(row)
+    return outputCsv
 
 if __name__ == "__main__":
     
@@ -141,7 +150,7 @@ if __name__ == "__main__":
                         #------------ If everything is fine, write to the verification file ------------
                         with open(verFilePath + ".csv", "w", newline="") as csv_file:
                             writer = csv.writer(csv_file)
-                            writer.writerow(['Name', 'Size (Kb)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
+                            writer.writerow(['Name', 'Size (B)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
                             num_files, num_dirs = scan_folder(dirPath, writer)
                             print(f"In total {num_files} files and {num_dirs} directories have been scanned!")
                             end_time = time.time()
@@ -194,7 +203,7 @@ if __name__ == "__main__":
                 # create a new csv file that is going to be compared with the old one to see if something has changed
                 with open("new_csv_file.csv", "w", newline="") as new_csv_file:
                     new_writer = csv.writer(new_csv_file)
-                    new_writer.writerow(['Name', 'Size (Kb)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
+                    new_writer.writerow(['Name', 'Size (B)', 'Owner', 'Group', 'Permission levels', 'Last modification date time', 'Hash ('+hashFun+')', 'Path'])
                     num_files, num_dirs = scan_folder(dirPath, new_writer)
                 #------------ Check if something has been deleted ------------ 
                 # from the old csv file remove all the entries that are in the new csv.
@@ -215,31 +224,94 @@ if __name__ == "__main__":
                 deleted_paths = set()
                 deleted_paths = original_csv_files - new_csv_files
                 print("------------ Scanning for deleted files or directories ------------")
-                if bool(deleted_paths): # if the set is not empty, it means that something has been deleted
-                    print("Warning: the following file/s or directory/ies has/have been deleted!\n")
-                    for deleted_file in deleted_paths:
-                        print(deleted_file)
+                if bool(deleted_paths): # if the set is not empty, it means that something has been deleted afterwards
+                    print("Warning: the following file/s or directory/ies has/have been deleted!")
+                    for index, deleted_file in enumerate(sorted(deleted_paths)):
+                        print(f"{index+1} - {deleted_file}")
                 else:
                     print("Nothing was deleted!")
                 #------------ Check if something new was added ------------
                 # This is achieved by doing the opposite set subtraction from above
-                # From the new files remove all the old files. If there's something left, it must have been added
+                # From the new files remove all the old files. If there's something left, then it was added afterward
                 print("------------ Scanning for new files or directories ------------")
                 new_paths = new_csv_files - original_csv_files
                 if bool(new_paths):
-                    print("Warning: the following file/s or directory/ies has/have been deleted\n")
-                    for added_file in new_paths:
-                        print(added_file)
+                    print("Warning: the following file/s or directory/ies has/have been added")
+                    for index, added_file in enumerate(sorted(new_paths)):
+                        print(f"{index+1} - {added_file}")
                 else:
                     print("Nothing was added!")
                 #------------ Look for all the remaing stuff to find ------------
+                # 1) take the original verification file and create a new one withoout the deleted items
+                # 2) take the second verification file and create a new one without the added items
+                # 3) The resulting csv files will have the same amount of rows, thus making it possible to scan them "in parallel".
+                #    Furthermore, given the fact that they were created using the same function, the order of the item is the same.
+                
+                # 1)
+                filesInfoBefore = copy_csv_and_remove_unwanted_lines(inputCsvFile=verFilePath, outputCsvFile="ver_file_copy.csv", unwantedItems=deleted_paths)
+                
+                # 2)
+                filesInfoAfter = copy_csv_and_remove_unwanted_lines(inputCsvFile="new_csv_file.csv", outputCsvFile="second_ver_file_copy.csv", unwantedItems=new_paths)
 
+                # 3)
+                print("------------ Scanning for details ------------")
+                with open(filesInfoBefore.name, 'r') as fileA, open(filesInfoAfter.name, 'r') as fileB:
+                    readerA = csv.reader(fileA)
+                    readerB = csv.reader(fileB)
+                    
+                    list_of_changes = []
+                    # scans both copied csv files in parallel
+                    for rowA, rowB in zip(readerA, readerB):
+                        flag = False
+                        changes = {"Size" : None, 
+                               "Owner" : None, 
+                               "Group" : None, 
+                               "Permission Levels" : None, 
+                               "Last Modification Date" : None, 
+                               "Hash" : None,
+                               }
+                        
+                        if rowA[1] != rowB[1]:
+                            changes["size"] = [rowA[1], rowB[1]]
+                            flag = True
+                        if rowA[2] != rowB[2]:
+                            changes["Owner"] = [rowA[2], rowB[2]]
+                            flag = True
+                        if rowA[3] != rowB[3]:
+                            changes["Group"] = [rowA[3], rowB[3]]
+                            flag = True
+                        if rowA[4] != rowB[4]:
+                            changes["Permission Levels"] = [rowA[4], rowB[4]]
+                            flag = True
+                        if rowA[5] != rowB[5]:
+                            changes["Last Modification Date"] = [rowA[5], rowB[5]]
+                            flag = True
+                        if rowA[6] != rowB[6]:
+                            changes["Hash"] = [rowA[6], rowB[6]]
+                            flag = True
+                            
+                        
+                        if flag: # If something has changed, print it
+                            list_of_changes.append(changes)
+                
+                if list_of_changes:
+                    for index, changes in enumerate(list_of_changes):
+                        print(f"{index+1} - The file {rowA[-1]} has undergone the following modifications:")
+                        for key, item in changes.items():
+                            if item is not None:
+                                print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")
+                else:
+                    print("No file or directory was modified!") 
+                    
+
+
+                        
                 
  
                 end_time = time.time()
                 total_time_verification_mode = end_time - start_time
         except Exception as e:
-            print(str(e) + "\n")
+            print("\n" + str(e) + "\n")
             traceback.print_exc()
 
         
