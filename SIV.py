@@ -8,13 +8,16 @@ import datetime         # for managing dates and time in a human-readable format
 import hashlib          # for hashing files
 import time             # for calculating the total amount of time that a certain mode takes
 
-def check_if_file_is_inside_folder(filePath : str, dirPath : str):
+def check_if_file_is_inside_folder(filePath : str, dirPath : str) -> bool:
+    '''Takes the path to a file and the path to a directory and returns True if the file
+       is inside the folder, False otherwise'''
     if os.path.commonprefix([filePath, dirPath]) == dirPath:
         return True
     else:
         return False
 
-def calculate_hash(filepath, hasher):
+def calculate_hash(filepath : str, hasher : hashlib._hashlib.HASH) -> str:
+    '''Takes the path to a file and the hashing function in input and returns the hashed digest of said file'''
     with open(filepath, "rb") as f:
         while True:
             data = f.read(4096)
@@ -23,7 +26,10 @@ def calculate_hash(filepath, hasher):
             hasher.update(data)
     return hasher.hexdigest()
 
-def scan_folder(root_folder, csv_writer):
+def scan_folder(root_folder : str, csv_writer : csv.writer) -> tuple[int, int]:
+    '''Method that recursively scans the parsed root folder and everyone of its subfolder, up to any depth.
+    The csv.writer argument is used for writing all the necessary informations to a csv file.
+    It returns the number of files and folder (in this order) that have been scanned'''
     num_files = 0
     num_dirs = 0
     # create a list of all the directories followed by all the files
@@ -88,10 +94,13 @@ def scan_folder(root_folder, csv_writer):
             toBeWritten = [filename, size, file_owner_name, file_group_name, permissions, formatted_datetime, computed_message_digest, path]
             # writes to the csv
             csv_writer.writerow(toBeWritten)
-
     return num_files, num_dirs
 
 def copy_csv_and_remove_unwanted_lines(inputCsvFile : str, outputCsvFile : str, unwantedItems : set):
+    '''Opens the inputCsvFile and copies all the rows where the last column item doesn't belong\
+        to the set of unwantedItems into the the outputCsvFile.
+        Returns a FileIOWrapper of a csv file.
+    '''
     with open(inputCsvFile, 'r') as inputCsv, open(outputCsvFile, "w", newline="") as outputCsv:
         reader = csv.reader(inputCsv)
         writer = csv.writer(outputCsv)
@@ -122,6 +131,7 @@ if __name__ == "__main__":
     #------------ Parse all the received arguments ------------
     args = parser.parse_args() # Namespace for all the arguments
 
+    #------------ Start of initialization mode ------------
     if args.initialization_mode == True:
         start_time = time.time() # start counting time  
         print("Starting initialization mode...")
@@ -166,6 +176,7 @@ if __name__ == "__main__":
             print(str(e) + "\n")
             traceback.print_exc()
 
+    #------------ Start of verification mode ------------
     elif args.verification_mode:
         start_time = time.time() # start counting time  
         
@@ -302,16 +313,25 @@ if __name__ == "__main__":
                                 print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")
                 else:
                     print("No file or directory was modified!") 
-                    
 
+                # When everything is done, clean up all the csv files left behind
+                os.remove("new_csv_file.csv")
+                os.remove("second_ver_file_copy.csv")
+                os.remove("ver_file_copy.csv")
 
-                        
-                
- 
+                # Stop counting time
                 end_time = time.time()
                 total_time_verification_mode = end_time - start_time
+
+                # Write to the report file
+                with open(reportFilePath, "w") as rf:
+                    rf.write(f"The full path of the monitored directory is {dirPath}\n")
+                    rf.write(f"The full path of the verification file is {verFilePath}\n")
+                    rf.write(f"The full path of this report file is {reportFilePath}\n")
+                    rf.write(f"Overall, {num_dirs} directories containing a total of {num_files} files have been scanned\n")
+                    rf.write(f"Overall, {len(deleted_paths) + len(new_paths) + len(list_of_changes)} warnings have been issued\n")
+                    rf.write(f"The total time spent in initialization mode is {total_time_verification_mode} (seconds)\n")
+               
         except Exception as e:
             print("\n" + str(e) + "\n")
             traceback.print_exc()
-
-        
