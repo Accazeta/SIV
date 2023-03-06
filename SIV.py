@@ -274,7 +274,8 @@ if __name__ == "__main__":
                     # scans both copied csv files in parallel
                     for rowA, rowB in zip(readerA, readerB):
                         flag = False
-                        changes = {"Size" : None, 
+                        changes = {"Path" : rowA[-1],
+                               "Size" : None, 
                                "Owner" : None, 
                                "Group" : None, 
                                "Permission Levels" : None, 
@@ -307,7 +308,8 @@ if __name__ == "__main__":
                 
                 if list_of_changes:
                     for index, changes in enumerate(list_of_changes):
-                        print(f"{index+1} - The file {rowA[-1]} has undergone the following modifications:")
+                        file_path = changes["Path"]
+                        print(f"{index+1} - The file {file_path} has undergone the following modifications:")
                         for key, item in changes.items():
                             if item is not None:
                                 print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")

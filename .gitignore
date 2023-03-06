@@ -132,3 +132,11 @@ test_folder/data/a/blah.txt
 .gitignore
 .gitignore
 test_folder/data/a/blahblah.gz
+test_folder/init.txt
+test_folder/vDB.csv
+test_folder/verify.txt
+new_csv_file.csv
+.gitignore
+ver_file_copy.csv
+second_ver_file_copy.csv
+.vscode/launch.json
