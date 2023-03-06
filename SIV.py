@@ -204,8 +204,6 @@ if __name__ == "__main__":
                 raise FileNotFoundError(f"\n {dirPath} doesn't exist")
             elif not os.path.isfile(verFilePath):
                 raise FileNotFoundError(f"\n {verFilePath} doesn't exist")
-            elif not os.path.isfile(reportFilePath):
-                raise FileNotFoundError(f"\n {reportFilePath} doesn't exist")
             elif not str(reportFilePath).endswith(".txt"):
                 raise ValueError(f"\n {reportFilePath} must be a .txt file")
             elif check_if_file_is_inside_folder(verFilePath, dirPath): # if true, file location is inside
