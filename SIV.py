@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse as ap   # for commandline parameters
 import os               # for interacting with the os
 import traceback        # for printing the traceback of an exception
