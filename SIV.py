@@ -311,7 +311,7 @@ if __name__ == "__main__":
                         file_path = changes["Path"]
                         print(f"{index+1} - The file {file_path} has undergone the following modifications:")
                         for key, item in changes.items():
-                            if item is not None:
+                            if item is not None and key is not "Path":
                                 print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")
                 else:
                     print("No file or directory was modified!") 
