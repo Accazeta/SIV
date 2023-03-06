@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+test_folder/data/x.txt
+test_folder/data/a/blah.txt
+.gitignore
+.gitignore
