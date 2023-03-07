@@ -309,7 +309,7 @@ if __name__ == "__main__":
                 if list_of_changes:
                     for index, changes in enumerate(list_of_changes):
                         file_path = changes["Path"]
-                        print(f"{index+1} - The file {file_path} has undergone the following modifications:")
+                        print(f"{index+1} - The file/folder {file_path} has undergone the following modifications:")
                         for key, item in changes.items():
                             if item is not None and key is not "Path":
                                 print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")
