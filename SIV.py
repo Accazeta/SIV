@@ -28,7 +28,7 @@ def calculate_hash(filepath : str, hasher : hashlib._hashlib.HASH) -> str:
             hasher.update(data)
     return hasher.hexdigest()
 
-def scan_folder(root_folder : str, csv_writer : csv.writer) -> tuple[int, int]:
+def scan_folder(root_folder : str, csv_writer : csv.writer):
     '''Method that recursively scans the parsed root folder and everyone of its subfolder, up to any depth.
     The csv.writer argument is used for writing all the necessary informations to a csv file.
     It returns the number of files and folder (in this order) that have been scanned'''
