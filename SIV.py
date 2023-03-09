@@ -114,9 +114,9 @@ def copy_csv_and_remove_unwanted_lines(inputCsvFile : str, outputCsvFile : str, 
 if __name__ == "__main__":
     
     parser = ap.ArgumentParser(add_help=False)
-    parser.usage = 'This is a simple System Integrity Verifier (SIV) for a Linux system. Its goal is to detect file system\
-    modifications occurring within a directory tree. The SIV outputs statistics and warnings about changes\
-    to a report file specified by the user.'
+    parser.usage = 'This is a simple System Integrity Verifier (SIV) for a Linux system. Its goal is to detect file system \
+modifications occurring within a directory tree. The SIV outputs statistics and warnings about changes \
+to a report file specified by the user.'
 
     #------------ List of all the arguments ------------
     group1 = parser.add_mutually_exclusive_group(required=True)
@@ -311,7 +311,7 @@ if __name__ == "__main__":
                         file_path = changes["Path"]
                         print(f"{index+1} - The file/folder {file_path} has undergone the following modifications:")
                         for key, item in changes.items():
-                            if item is not None and key is not "Path":
+                            if item is not None and key != "Path":
                                 print(f"\t{key}:\t|{item[0]}| --> |{item[1]}|")
                 else:
                     print("No file or directory was modified!") 
@@ -332,7 +332,7 @@ if __name__ == "__main__":
                     rf.write(f"The full path of this report file is {reportFilePath}\n")
                     rf.write(f"Overall, {num_dirs} directories containing a total of {num_files} files have been scanned\n")
                     rf.write(f"Overall, {len(deleted_paths) + len(new_paths) + len(list_of_changes)} warnings have been issued\n")
-                    rf.write(f"The total time spent in initialization mode is {total_time_verification_mode} (seconds)\n")
+                    rf.write(f"The total time spent in verification mode is {total_time_verification_mode} (seconds)\n")
                
         except Exception as e:
             print("\n" + str(e) + "\n")
